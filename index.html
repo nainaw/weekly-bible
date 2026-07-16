@@ -129,6 +129,7 @@
     .loading {
       font-size: 1.2rem;
       color: var(--text-muted);
+      text-align: center;
     }
     .error-msg {
       color: #c0392b;
@@ -148,6 +149,8 @@
 <script>
   let weeksData = [];
   let currentIndex = 0;
+  let quarterTitle = "";
+  let quarterSubtitle = "";
 
   function getWeekNumber(d) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -160,24 +163,20 @@
   async function loadVerses() {
     const container = document.getElementById('app-content');
     try {
-      // Fetching verses.txt from your repository
       const response = await fetch('verses.txt');
       if (!response.ok) {
         throw new Error("Tsy hita ny rakitra verses.txt. Hamarino tsara fa efa ao amin'ny repo izany.");
       }
       const rawText = await response.text();
       
-      // Parse the structured text file
       const parts = rawText.split("================================================");
       const headerPart = parts[0].trim();
       const weeksPart = parts.length > 1 ? parts[1].trim() : "";
       
-      // Parse Header
       const headerLines = headerPart.split('\n').map(l => l.trim()).filter(l => l);
-      const quarterTitle = headerLines[0] || "TELOVOLANA";
-      const quarterSubtitle = headerLines.slice(1).join(" - ") || "";
+      quarterTitle = headerLines[0] || "TELOVOLANA";
+      quarterSubtitle = headerLines.slice(1).join(" - ") || "";
       
-      // Parse Weeks
       const rawWeeks = weeksPart.split("------------------------------------------------").map(w => w.trim()).filter(w => w);
       
       weeksData = rawWeeks.map((rw, index) => {
@@ -197,13 +196,10 @@
         throw new Error("Tsy nisy teny faneva hita tao anatin'ny rakitra.");
       }
 
-      // Automatically select the current week based on calendar date
-      const currentWeekNum = getWeekNumber(new Date());
-      // Default to the current week if it exists, otherwise the first week available
-      const foundIndex = weeksData.findIndex(w => w.weekNum === currentWeekNum);
-      currentIndex = foundIndex !== -1 ? foundIndex : 0;
+      // Automatically select the first week as default
+      currentIndex = 0;
 
-      renderPage(quarterTitle, quarterSubtitle);
+      renderPage();
     } catch (err) {
       container.innerHTML = `
         <div class="card error-msg">
@@ -214,14 +210,14 @@
     }
   }
 
-  function renderPage(qTitle, qSubtitle) {
+  function renderPage() {
     const container = document.getElementById('app-content');
     const currentWeek = weeksData[currentIndex];
 
     container.innerHTML = `
       <div class="quarter-container">
-        <div class="quarter-title">${qTitle}</div>
-        <h1 class="quarter-subtitle">${qSubtitle}</h1>
+        <div class="quarter-title">${quarterTitle}</div>
+        <h1 class="quarter-subtitle">${quarterSubtitle}</h1>
       </div>
 
       <div class="card">
@@ -243,7 +239,7 @@
 
   function changeWeek(direction) {
     currentIndex += direction;
-    loadVerses(); // Re-render with new index
+    renderPage(); // Update UI without reloading the text file
   }
 
   loadVerses();
