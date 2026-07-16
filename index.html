@@ -142,13 +142,13 @@
 </div>
 
 <script>
-  // Raha misy olana ny famakiana ny verses.txt, dia ity backup ity no ampiasainy avy hatrany
+  // Fallback backup if verses.txt is entirely empty or unreachable
   const BACKUP_TEXT = `TELOVOLANA II
 
 MAMPIFANDRAY NY LANITRA SY NY TANY
 Kristy ao amin'ny Kolosiana sy Filipiana
 
-================================================
+---
 
 Enjehina, nefa tsy nafoy
 
@@ -157,7 +157,7 @@ hoy izaho indray mifalia.
 
 Filipiana 4:4
 
-------------------------------------------------
+---
 
 Anton'ny fisaorana sy ny vavaka
 
@@ -168,7 +168,7 @@ mandra-pihavin'ny andron'i Jesosy Kristy.
 
 Filipiana 1:6
 
-------------------------------------------------
+---
 
 Fiainana sy fahafatesana
 
@@ -178,7 +178,7 @@ no hahazoako tombony.
 
 Filipiana 1:21
 
-------------------------------------------------`;
+---`;
 
   let weeksData = [];
   let currentIndex = 0;
@@ -188,7 +188,6 @@ Filipiana 1:21
   async function loadVerses() {
     let rawText = "";
     try {
-      // Miezaka mamaky ny verses.txt
       const response = await fetch('verses.txt');
       if (response.ok) {
         rawText = await response.text();
@@ -196,7 +195,6 @@ Filipiana 1:21
         rawText = BACKUP_TEXT;
       }
     } catch (err) {
-      // Raha misy hadisoana (ohatra: CORS eo am-panandramana azy eo an-toerana), ampiasao ny backup
       rawText = BACKUP_TEXT;
     }
 
@@ -204,29 +202,77 @@ Filipiana 1:21
   }
 
   function parseAndRender(rawText) {
-    // Mampiasa regex mba tsy hampaninona na firy na firy ny isan'ny "=" na "-"
-    const parts = rawText.split(/={10,}/);
-    const headerPart = parts[0].trim();
-    const weeksPart = parts.length > 1 ? parts[1].trim() : "";
-    
-    const headerLines = headerPart.split('\n').map(l => l.trim()).filter(l => l);
+    // 1. Split text into lines
+    const lines = rawText.split(/\r?\n/);
+    const blocks = [];
+    let currentBlock = [];
+
+    // 2. Separate into blocks using any line with 3 or more dashes/equals as a divider
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (/^[=-]{3,}$/.test(trimmed)) {
+        if (currentBlock.length > 0) {
+          blocks.push(currentBlock);
+          currentBlock = [];
+        }
+      } else {
+        currentBlock.push(trimmed);
+      }
+    }
+    if (currentBlock.length > 0) {
+      blocks.push(currentBlock);
+    }
+
+    if (blocks.length === 0) {
+      parseAndRender(BACKUP_TEXT);
+      return;
+    }
+
+    // 3. First block is the Header
+    const headerLines = blocks[0].filter(l => l);
     quarterTitle = headerLines[0] || "TELOVOLANA II";
-    quarterSubtitle = headerLines.slice(1).join(" - ") || "MAMPIFANDRAY NY LANITRA SY NY TANY\nKristy ao amin'ny Kolosiana sy Filipiana";
-    
-    const rawWeeks = weeksPart.split(/-{10,}/).map(w => w.trim()).filter(w => w);
-    
-    weeksData = rawWeeks.map((rw, index) => {
-      const lines = rw.split('\n').map(l => l.trim()).filter(l => l);
-      if (lines.length >= 3) {
+    quarterSubtitle = headerLines.slice(1).join(" - ") || "";
+
+    // 4. Other blocks are the weeks
+    const rawWeeks = blocks.slice(1);
+    weeksData = rawWeeks.map((block, index) => {
+      const cleanLines = block.filter(l => l);
+      if (cleanLines.length === 0) return null;
+      
+      // Extremely flexible line detection
+      if (cleanLines.length === 1) {
         return {
           weekNum: index + 1,
-          title: lines[0],
-          reference: lines[lines.length - 1],
-          verse: lines.slice(1, lines.length - 1).join('\n')
+          title: cleanLines[0],
+          verse: "Tsy misy andinin-tsoratra masina.",
+          reference: ""
+        };
+      } else if (cleanLines.length === 2) {
+        return {
+          weekNum: index + 1,
+          title: cleanLines[0],
+          verse: "“ " + cleanLines[1] + " ”",
+          reference: ""
+        };
+      } else {
+        return {
+          weekNum: index + 1,
+          title: cleanLines[0],
+          verse: cleanLines.slice(1, cleanLines.length - 1).join('\n'),
+          reference: cleanLines[cleanLines.length - 1]
         };
       }
-      return null;
     }).filter(w => w !== null);
+
+    // Fallback if formatting was so broken no weeks were found
+    if (weeksData.length === 0) {
+      weeksData = [{
+        weekNum: 1,
+        title: "Fahadisoana teo amin'ny fanoratana",
+        verse: "Hamarino tsara ny fanoratana ao amin'ny verses.txt.",
+        reference: ""
+      }];
+    }
 
     currentIndex = 0;
     renderPage();
@@ -234,7 +280,7 @@ Filipiana 1:21
 
   function renderPage() {
     const container = document.getElementById('app-content');
-    const currentWeek = weeksData[currentIndex];
+    const currentWeek = weeksData[currentIndex] || weeksData[0];
 
     container.innerHTML = `
       <div class="quarter-container">
@@ -243,7 +289,7 @@ Filipiana 1:21
       </div>
 
       <div class="card">
-        <div class="week-indicator">Lesona faha-${currentWeek.weekNum}</div>
+        <div class="week-indicator">Herinandro faha-${currentWeek.weekNum}</div>
         <h2 class="theme-title">${currentWeek.title}</h2>
         <div class="verse-text">“ ${currentWeek.verse} ”</div>
         <div class="verse-reference">${currentWeek.reference}</div>
