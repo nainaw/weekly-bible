@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="mg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teny Faneva Isan-kerinandro</title>
+  <style>
+    :root {
+      --bg: #f5f2eb;
+      --paper: #ffffff;
+      --primary: #2c3e50;
+      --accent: #b8975a;
+      --text: #34495e;
+      --text-muted: #7f8c8d;
+      --border: #e8e4da;
+    }
+    body {
+      font-family: 'Georgia', serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 700px;
+      padding: 2rem 1rem;
+      box-sizing: border-box;
+    }
+    .quarter-container {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .quarter-title {
+      font-size: 1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    .quarter-subtitle {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .card {
+      background-color: var(--paper);
+      padding: 3rem 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(44, 62, 80, 0.05);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: var(--accent);
+    }
+    .week-indicator {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+    .theme-title {
+      font-size: 1.4rem;
+      color: var(--primary);
+      margin-top: 0;
+      margin-bottom: 2rem;
+      font-style: italic;
+    }
+    .verse-text {
+      font-size: 1.6rem;
+      line-height: 1.6;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      white-space: pre-line;
+      font-weight: 500;
+    }
+    .verse-reference {
+      font-size: 1.1rem;
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      gap: 1rem;
+    }
+    .nav-btn {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      background-color: var(--paper);
+    }
+    .nav-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .loading {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+    }
+    .error-msg {
+      color: #c0392b;
+      text-align: center;
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <div id="app-content">
+    <div class="loading">Diniho kely, eo am-pamakiana ny teny faneva...</div>
+  </div>
+</div>
+
+<script>
+  let weeksData = [];
+  let currentIndex = 0;
+
+  function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return weekNo;
+  }
+
+  async function loadVerses() {
+    const container = document.getElementById('app-content');
+    try {
+      // Fetching verses.txt from your repository
+      const response = await fetch('verses.txt');
+      if (!response.ok) {
+        throw new Error("Tsy hita ny rakitra verses.txt. Hamarino tsara fa efa ao amin'ny repo izany.");
+      }
+      const rawText = await response.text();
+      
+      // Parse the structured text file
+      const parts = rawText.split("================================================");
+      const headerPart = parts[0].trim();
+      const weeksPart = parts.length > 1 ? parts[1].trim() : "";
+      
+      // Parse Header
+      const headerLines = headerPart.split('\n').map(l => l.trim()).filter(l => l);
+      const quarterTitle = headerLines[0] || "TELOVOLANA";
+      const quarterSubtitle = headerLines.slice(1).join(" - ") || "";
+      
+      // Parse Weeks
+      const rawWeeks = weeksPart.split("------------------------------------------------").map(w => w.trim()).filter(w => w);
+      
+      weeksData = rawWeeks.map((rw, index) => {
+        const lines = rw.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length >= 3) {
+          return {
+            weekNum: index + 1,
+            title: lines[0],
+            reference: lines[lines.length - 1],
+            verse: lines.slice(1, lines.length - 1).join('\n')
+          };
+        }
+        return null;
+      }).filter(w => w !== null);
+
+      if (weeksData.length === 0) {
+        throw new Error("Tsy nisy teny faneva hita tao anatin'ny rakitra.");
+      }
+
+      // Automatically select the current week based on calendar date
+      const currentWeekNum = getWeekNumber(new Date());
+      // Default to the current week if it exists, otherwise the first week available
+      const foundIndex = weeksData.findIndex(w => w.weekNum === currentWeekNum);
+      currentIndex = foundIndex !== -1 ? foundIndex : 0;
+
+      renderPage(quarterTitle, quarterSubtitle);
+    } catch (err) {
+      container.innerHTML = `
+        <div class="card error-msg">
+          <h2>Misy olana kely</h2>
+          <p>${err.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  function renderPage(qTitle, qSubtitle) {
+    const container = document.getElementById('app-content');
+    const currentWeek = weeksData[currentIndex];
+
+    container.innerHTML = `
+      <div class="quarter-container">
+        <div class="quarter-title">${qTitle}</div>
+        <h1 class="quarter-subtitle">${qSubtitle}</h1>
+      </div>
+
+      <div class="card">
+        <div class="week-indicator">Herinandro faha-${currentWeek.weekNum}</div>
+        <h2 class="theme-title">${currentWeek.title}</h2>
+        <div class="verse-text">“ ${currentWeek.verse} ”</div>
+        <div class="verse-reference">${currentWeek.reference}</div>
+      </div>
+
+      <div class="navigation">
+        <button class="nav-btn" id="prev-btn" onclick="changeWeek(-1)">← Teo aloha</button>
+        <button class="nav-btn" id="next-btn" onclick="changeWeek(1)">Manaraka →</button>
+      </div>
+    `;
+
+    document.getElementById('prev-btn').disabled = currentIndex === 0;
+    document.getElementById('next-btn').disabled = currentIndex === weeksData.length - 1;
+  }
+
+  function changeWeek(direction) {
+    currentIndex += direction;
+    loadVerses(); // Re-render with new index
+  }
+
+  loadVerses();
+</script>
+</body>
+</html>
