@@ -131,11 +131,6 @@
       color: var(--text-muted);
       text-align: center;
     }
-    .error-msg {
-      color: #c0392b;
-      text-align: center;
-      padding: 2rem;
-    }
   </style>
 </head>
 <body>
@@ -147,67 +142,94 @@
 </div>
 
 <script>
+  // Raha misy olana ny famakiana ny verses.txt, dia ity backup ity no ampiasainy avy hatrany
+  const BACKUP_TEXT = `TELOVOLANA II
+
+MAMPIFANDRAY NY LANITRA SY NY TANY
+Kristy ao amin'ny Kolosiana sy Filipiana
+
+================================================
+
+Enjehina, nefa tsy nafoy
+
+Mifalia mandrakariva amin'ny Tompo,
+hoy izaho indray mifalia.
+
+Filipiana 4:4
+
+------------------------------------------------
+
+Anton'ny fisaorana sy ny vavaka
+
+Ary matoky indrindra aho
+fa Izay nanomboka asa tsara tao anatinareo
+no hahatanteraka izany
+mandra-pihavin'ny andron'i Jesosy Kristy.
+
+Filipiana 1:6
+
+------------------------------------------------
+
+Fiainana sy fahafatesana
+
+Fa Kristy no antony hahavelomako,
+ary ny fahafatesana
+no hahazoako tombony.
+
+Filipiana 1:21
+
+------------------------------------------------`;
+
   let weeksData = [];
   let currentIndex = 0;
   let quarterTitle = "";
   let quarterSubtitle = "";
 
-  function getWeekNumber(d) {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-    return weekNo;
+  async function loadVerses() {
+    let rawText = "";
+    try {
+      // Miezaka mamaky ny verses.txt
+      const response = await fetch('verses.txt');
+      if (response.ok) {
+        rawText = await response.text();
+      } else {
+        rawText = BACKUP_TEXT;
+      }
+    } catch (err) {
+      // Raha misy hadisoana (ohatra: CORS eo am-panandramana azy eo an-toerana), ampiasao ny backup
+      rawText = BACKUP_TEXT;
+    }
+
+    parseAndRender(rawText);
   }
 
-  async function loadVerses() {
-    const container = document.getElementById('app-content');
-    try {
-      const response = await fetch('verses.txt');
-      if (!response.ok) {
-        throw new Error("Tsy hita ny rakitra verses.txt. Hamarino tsara fa efa ao amin'ny repo izany.");
+  function parseAndRender(rawText) {
+    // Mampiasa regex mba tsy hampaninona na firy na firy ny isan'ny "=" na "-"
+    const parts = rawText.split(/={10,}/);
+    const headerPart = parts[0].trim();
+    const weeksPart = parts.length > 1 ? parts[1].trim() : "";
+    
+    const headerLines = headerPart.split('\n').map(l => l.trim()).filter(l => l);
+    quarterTitle = headerLines[0] || "TELOVOLANA II";
+    quarterSubtitle = headerLines.slice(1).join(" - ") || "MAMPIFANDRAY NY LANITRA SY NY TANY\nKristy ao amin'ny Kolosiana sy Filipiana";
+    
+    const rawWeeks = weeksPart.split(/-{10,}/).map(w => w.trim()).filter(w => w);
+    
+    weeksData = rawWeeks.map((rw, index) => {
+      const lines = rw.split('\n').map(l => l.trim()).filter(l => l);
+      if (lines.length >= 3) {
+        return {
+          weekNum: index + 1,
+          title: lines[0],
+          reference: lines[lines.length - 1],
+          verse: lines.slice(1, lines.length - 1).join('\n')
+        };
       }
-      const rawText = await response.text();
-      
-      const parts = rawText.split("================================================");
-      const headerPart = parts[0].trim();
-      const weeksPart = parts.length > 1 ? parts[1].trim() : "";
-      
-      const headerLines = headerPart.split('\n').map(l => l.trim()).filter(l => l);
-      quarterTitle = headerLines[0] || "TELOVOLANA";
-      quarterSubtitle = headerLines.slice(1).join(" - ") || "";
-      
-      const rawWeeks = weeksPart.split("------------------------------------------------").map(w => w.trim()).filter(w => w);
-      
-      weeksData = rawWeeks.map((rw, index) => {
-        const lines = rw.split('\n').map(l => l.trim()).filter(l => l);
-        if (lines.length >= 3) {
-          return {
-            weekNum: index + 1,
-            title: lines[0],
-            reference: lines[lines.length - 1],
-            verse: lines.slice(1, lines.length - 1).join('\n')
-          };
-        }
-        return null;
-      }).filter(w => w !== null);
+      return null;
+    }).filter(w => w !== null);
 
-      if (weeksData.length === 0) {
-        throw new Error("Tsy nisy teny faneva hita tao anatin'ny rakitra.");
-      }
-
-      // Automatically select the first week as default
-      currentIndex = 0;
-
-      renderPage();
-    } catch (err) {
-      container.innerHTML = `
-        <div class="card error-msg">
-          <h2>Misy olana kely</h2>
-          <p>${err.message}</p>
-        </div>
-      `;
-    }
+    currentIndex = 0;
+    renderPage();
   }
 
   function renderPage() {
@@ -239,7 +261,7 @@
 
   function changeWeek(direction) {
     currentIndex += direction;
-    renderPage(); // Update UI without reloading the text file
+    renderPage();
   }
 
   loadVerses();
