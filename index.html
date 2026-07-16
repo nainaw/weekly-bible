@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="mg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teny Faneva Isan-kerinandro</title>
+  <style>
+    :root {
+      --bg: #f5f2eb;
+      --paper: #ffffff;
+      --primary: #2c3e50;
+      --accent: #b8975a;
+      --text: #34495e;
+      --text-muted: #7f8c8d;
+      --border: #e8e4da;
+    }
+    body {
+      font-family: 'Georgia', serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 700px;
+      padding: 2rem 1rem;
+      box-sizing: border-box;
+    }
+    .selector-container {
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+    }
+    .selector-container label {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .custom-select {
+      position: relative;
+    }
+    select {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+      background-color: var(--paper);
+      border: 1px solid var(--border);
+      padding: 0.6rem 2.5rem 0.6rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8975a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      transition: all 0.2s ease;
+    }
+    select:hover, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 2px 10px rgba(184, 151, 90, 0.15);
+    }
+    .quarter-container {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .quarter-title {
+      font-size: 1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    .quarter-subtitle {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .card {
+      background-color: var(--paper);
+      padding: 3rem 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(44, 62, 80, 0.05);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: var(--accent);
+    }
+    .week-indicator {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+    .theme-title {
+      font-size: 1.4rem;
+      color: var(--primary);
+      margin-top: 0;
+      margin-bottom: 2rem;
+      font-style: italic;
+    }
+    .verse-text {
+      font-size: 1.6rem;
+      line-height: 1.6;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      white-space: pre-line;
+      font-weight: 500;
+    }
+    .verse-reference {
+      font-size: 1.1rem;
+      color: var(--accent);
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      gap: 1rem;
+    }
+    .nav-btn {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      background-color: var(--paper);
+    }
+    .nav-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .loading {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <!-- Dynamic Dropdown selector -->
+  <div class="selector-container">
+    <label for="quarter-select">Fizarana:</label>
+    <div class="custom-select">
+      <select id="quarter-select" onchange="handleQuarterChange(this.value)">
+        <!-- Generated automatically by JavaScript -->
+      </select>
+    </div>
+  </div>
+
+  <div id="app-content">
+    <div class="loading">Diniho kely, eo am-pamakiana ny teny faneva...</div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // AUTOMATED QUARTER ARCHIVE GENERATOR
+  // No need to manually edit this file anymore!
+  // ==========================================
+  function generateQuartersList() {
+    const START_YEAR = 2026;
+    const START_QUARTER = 2; // The earliest file we have (verses-2026-q2.txt)
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0 = Jan, 11 = Dec
+    const currentQuarter = Math.floor(currentMonth / 3) + 1; // 1 to 4
+    
+    const list = [];
+    const ROMAN_NUMERALS = ["I", "II", "III", "IV"];
+    
+    // Loop backwards from current year to our start year
+    for (let y = currentYear; y >= START_YEAR; y--) {
+      const maxQ = (y === currentYear) ? currentQuarter : 4;
+      const minQ = (y === START_YEAR) ? START_QUARTER : 1;
+      
+      // Loop backwards from newest quarter to oldest quarter
+      for (let q = maxQ; q >= minQ; q--) {
+        list.push({
+          id: `${y}-q${q}`,
+          label: `Telovolana ${ROMAN_NUMERALS[q - 1]}, ${y}`,
+          file: `verses-${y}-q${q}.txt`
+        });
+      }
+    }
+    return list;
+  }
+
+  // Backup fallback template
+  const BACKUP_TEXT = `TELOVOLANA II
+
+MAMPIFANDRAY NY LANITRA SY NY TANY
+Kristy ao amin'ny Kolosiana sy Filipiana
+
+---
+
+Enjehina, nefa tsy nafoy
+
+Mifalia mandrakariva amin'ny Tompo,
+hoy izaho indray mifalia.
+
+Filipiana 4:4
+
+---
+
+Anton'ny fisaorana sy ny vavaka
+
+Ary matoky indrindra aho
+fa Izay nanomboka asa tsara tao anatinareo
+no hahatanteraka izany
+mandra-pihavin'ny andron'i Jesosy Kristy.
+
+Filipiana 1:6
+
+---`;
+
+  let archiveList = [];
+  let weeksData = [];
+  let currentIndex = 0;
+  let quarterTitle = "";
+  let quarterSubtitle = "";
+  let selectedFile = "";
+
+  // 1. Initialize Selector dynamically using Date math
+  function initSelector() {
+    archiveList = generateQuartersList();
+    const selectEl = document.getElementById('quarter-select');
+    
+    selectEl.innerHTML = archiveList.map(item => 
+      `<option value="${item.file}">${item.label}</option>`
+    ).join('');
+    
+    // Default to the first one (most recent)
+    selectedFile = archiveList[0].file;
+  }
+
+  // 2. Fetch selected file
+  async function loadVerses(fileName) {
+    const container = document.getElementById('app-content');
+    container.innerHTML = `<div class="loading">Eo am-pamakiana ny teny faneva...</div>`;
+    
+    let rawText = "";
+    try {
+      const response = await fetch(fileName);
+      if (response.ok) {
+        rawText = await response.text();
+      } else {
+        // If the current quarter file isn't uploaded yet, fall back to the backup
+        rawText = BACKUP_TEXT;
+      }
+    } catch (err) {
+      rawText = BACKUP_TEXT;
+    }
+
+    parseAndRender(rawText);
+  }
+
+  // 3. Flexible and safe block parser
+  function parseAndRender(rawText) {
+    const lines = rawText.split(/\r?\n/);
+    const blocks = [];
+    let currentBlock = [];
+
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (/^[=-]{3,}$/.test(trimmed)) {
+        if (currentBlock.length > 0) {
+          blocks.push(currentBlock);
+          currentBlock = [];
+        }
+      } else {
+        currentBlock.push(trimmed);
+      }
+    }
+    if (currentBlock.length > 0) {
+      blocks.push(currentBlock);
+    }
+
+    if (blocks.length === 0) {
+      parseAndRender(BACKUP_TEXT);
+      return;
+    }
+
+    const headerLines = blocks[0].filter(l => l);
+    quarterTitle = headerLines[0] || "TELOVOLANA";
+    quarterSubtitle = headerLines.slice(1).join(" - ") || "";
+
+    const rawWeeks = blocks.slice(1);
+    weeksData = rawWeeks.map((block, index) => {
+      const cleanLines = block.filter(l => l);
+      if (cleanLines.length === 0) return null;
+      
+      if (cleanLines.length === 1) {
+        return {
+          weekNum: index + 1,
+          title: cleanLines[0],
+          verse: "Tsy misy andinin-tsoratra masina.",
+          reference: ""
+        };
+      } else if (cleanLines.length === 2) {
+        return {
+          weekNum: index + 1,
+          title: cleanLines[0],
+          verse: "“ " + cleanLines[1] + " ”",
+          reference: ""
+        };
+      } else {
+        return {
+          weekNum: index + 1,
+          title: cleanLines[0],
+          verse: cleanLines.slice(1, cleanLines.length - 1).join('\n'),
+          reference: cleanLines[cleanLines.length - 1]
+        };
+      }
+    }).filter(w => w !== null);
+
+    if (weeksData.length === 0) {
+      weeksData = [{
+        weekNum: 1,
+        title: "Fahadisoana",
+        verse: "Hamarino tsara ny fanoratana ao amin'ilay rakitra .txt.",
+        reference: ""
+      }];
+    }
+
+    currentIndex = 0;
+    renderPage();
+  }
+
+  function renderPage() {
+    const container = document.getElementById('app-content');
+    const currentWeek = weeksData[currentIndex] || weeksData[0];
+
+    container.innerHTML = `
+      <div class="quarter-container">
+        <div class="quarter-title">${quarterTitle}</div>
+        <h1 class="quarter-subtitle">${quarterSubtitle}</h1>
+      </div>
+
+      <div class="card">
+        <div class="week-indicator">Herinandro faha-${currentWeek.weekNum}</div>
+        <h2 class="theme-title">${currentWeek.title}</h2>
+        <div class="verse-text">“ ${currentWeek.verse} ”</div>
+        <div class="verse-reference">${currentWeek.reference}</div>
+      </div>
+
+      <div class="navigation">
+        <button class="nav-btn" id="prev-btn" onclick="changeWeek(-1)">← Teo aloha</button>
+        <button class="nav-btn" id="next-btn" onclick="changeWeek(1)">Manaraka →</button>
+      </div>
+    `;
+
+    document.getElementById('prev-btn').disabled = currentIndex === 0;
+    document.getElementById('next-btn').disabled = currentIndex === weeksData.length - 1;
+  }
+
+  function changeWeek(direction) {
+    currentIndex += direction;
+    renderPage();
+  }
+
+  function handleQuarterChange(newFile) {
+    selectedFile = newFile;
+    loadVerses(selectedFile);
+  }
+
+  // Run the program
+  initSelector();
+  loadVerses(selectedFile);
+</script>
+</body>
+</html>
