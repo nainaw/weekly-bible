@@ -1,202 +1,373 @@
-<script>
-  // ==========================================
-  // AUTOMATED QUARTER ARCHIVE GENERATOR
-  // ==========================================
-  function generateQuartersList() {
-    const START_YEAR = 2026;
-    const START_QUARTER = 1; // Changed to 1 so Q1 (verses-2026-q1.txt) is included!
-    
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0 = Jan, 11 = Dec
-    const currentQuarter = Math.floor(currentMonth / 3) + 1; // 1 to 4
-    
-    const list = [];
-    const ROMAN_NUMERALS = ["I", "II", "III", "IV"];
-    
-    for (let y = currentYear; y >= START_YEAR; y--) {
-      const maxQ = (y === currentYear) ? currentQuarter : 4;
-      const minQ = (y === START_YEAR) ? START_QUARTER : 1;
-      
-      for (let q = maxQ; q >= minQ; q--) {
-        list.push({
-          id: `${y}-q${q}`,
-          label: `Telovolana ${ROMAN_NUMERALS[q - 1]}, ${y}`,
-          file: `verses-${y}-q${q}.txt`
-        });
-      }
+<!DOCTYPE html>
+<html lang="mg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teny Faneva Isan-kerinandro</title>
+  <style>
+    :root {
+      --bg: #f5f2eb;
+      --paper: #ffffff;
+      --primary: #2c3e50;
+      --accent: #b8975a;
+      --text: #34495e;
+      --text-muted: #7f8c8d;
+      --border: #e8e4da;
     }
-    return list;
-  }
+    body {
+      font-family: 'Georgia', serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 700px;
+      padding: 2rem 1rem;
+      box-sizing: border-box;
+    }
+    .selector-container {
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+    }
+    .selector-container label {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    select {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+      background-color: var(--paper);
+      border: 1px solid var(--border);
+      padding: 0.6rem 2rem 0.6rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .quarter-container {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .quarter-title {
+      font-size: 1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    .quarter-subtitle {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin: 0;
+    }
+    .card {
+      background-color: var(--paper);
+      padding: 3rem 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(44, 62, 80, 0.05);
+      border: 1px solid var(--border);
+      position: relative;
+      text-align: center;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background-color: var(--accent);
+    }
+    .week-indicator {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+    .theme-title {
+      font-size: 1.4rem;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      font-style: italic;
+    }
+    .verse-text {
+      font-size: 1.6rem;
+      line-height: 1.6;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      white-space: pre-line;
+    }
+    .verse-reference {
+      font-size: 1.1rem;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+    }
+    .nav-btn {
+      background-color: var(--paper);
+      border: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .loading {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .error-box {
+      background-color: #fadbd8;
+      color: #78281f;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #f5b7b1;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
 
-  // Backup fallback template (used only if a file is missing on the server)
-  const BACKUP_TEXT = `TELOVOLANA III
+<div class="wrapper">
+  <div class="selector-container">
+    <label for="quarter-select">Fizarana:</label>
+    <select id="quarter-select" onchange="handleQuarterChange(this.value)">
+      <!-- Will be filled by JS -->
+    </select>
+  </div>
 
-MAMPIFANDRAY NY LANITRA SY NY TANY
-Kristy ao amin'ny Kolosiana sy Filipiana
+  <div id="app-content">
+    <div class="loading">Loading...</div>
+  </div>
+</div>
 
----
-
-Teny Faneva vonjimaika
-
-Mbola eo am-panomanana ny teny faneva ho an'ity telovolana ity izahay.
-Miverena kely aoriana kely azafady!
-
-Faneva 1:1
-
----`;
-
-  let archiveList = [];
+<script>
+  // Global variables
   let weeksData = [];
   let currentIndex = 0;
   let quarterTitle = "";
   let quarterSubtitle = "";
-  let selectedFile = "";
 
-  // 1. Initialize Selector dynamically
-  function initSelector() {
-    archiveList = generateQuartersList();
-    const selectEl = document.getElementById('quarter-select');
-    
-    selectEl.innerHTML = archiveList.map(item => 
-      `<option value="${item.file}">${item.label}</option>`
-    ).join('');
-    
-    // Default to the first one (most recent)
-    selectedFile = archiveList[0].file;
-  }
-
-  // 2. Fetch selected file
-  async function loadVerses(fileName) {
+  // Safe error display function
+  function showVisualError(message, details = "") {
     const container = document.getElementById('app-content');
-    container.innerHTML = `<div class="loading">Eo am-pamakiana ny teny faneva...</div>`;
-    
-    let rawText = "";
-    try {
-      const response = await fetch(fileName);
-      if (response.ok) {
-        rawText = await response.text();
-      } else {
-        // If the file doesn't exist yet, show the friendly holding message
-        rawText = BACKUP_TEXT;
-      }
-    } catch (err) {
-      rawText = BACKUP_TEXT;
-    }
-
-    parseAndRender(rawText);
-  }
-
-  // 3. Flexible and safe block parser
-  function parseAndRender(rawText) {
-    const lines = rawText.split(/\r?\n/);
-    const blocks = [];
-    let currentBlock = [];
-
-    for (let line of lines) {
-      const trimmed = line.trim();
-      if (/^[=-]{3,}$/.test(trimmed)) {
-        if (currentBlock.length > 0) {
-          blocks.push(currentBlock);
-          currentBlock = [];
-        }
-      } else {
-        currentBlock.push(trimmed);
-      }
-    }
-    if (currentBlock.length > 0) {
-      blocks.push(currentBlock);
-    }
-
-    if (blocks.length === 0) {
-      parseAndRender(BACKUP_TEXT);
-      return;
-    }
-
-    const headerLines = blocks[0].filter(l => l);
-    quarterTitle = headerLines[0] || "TELOVOLANA";
-    quarterSubtitle = headerLines.slice(1).join(" - ") || "";
-
-    const rawWeeks = blocks.slice(1);
-    weeksData = rawWeeks.map((block, index) => {
-      const cleanLines = block.filter(l => l);
-      if (cleanLines.length === 0) return null;
-      
-      if (cleanLines.length === 1) {
-        return {
-          weekNum: index + 1,
-          title: cleanLines[0],
-          verse: "Tsy misy andinin-tsoratra masina.",
-          reference: ""
-        };
-      } else if (cleanLines.length === 2) {
-        return {
-          weekNum: index + 1,
-          title: cleanLines[0],
-          verse: "“ " + cleanLines[1] + " ”",
-          reference: ""
-        };
-      } else {
-        return {
-          weekNum: index + 1,
-          title: cleanLines[0],
-          verse: cleanLines.slice(1, cleanLines.length - 1).join('\n'),
-          reference: cleanLines[cleanLines.length - 1]
-        };
-      }
-    }).filter(w => w !== null);
-
-    if (weeksData.length === 0) {
-      weeksData = [{
-        weekNum: 1,
-        title: "Fahadisoana",
-        verse: "Hamarino tsara ny fanoratana ao amin'ilay rakitra .txt.",
-        reference: ""
-      }];
-    }
-
-    currentIndex = 0;
-    renderPage();
-  }
-
-  function renderPage() {
-    const container = document.getElementById('app-content');
-    const currentWeek = weeksData[currentIndex] || weeksData[0];
-
     container.innerHTML = `
-      <div class="quarter-container">
-        <div class="quarter-title">${quarterTitle}</div>
-        <h1 class="quarter-subtitle">${quarterSubtitle}</h1>
-      </div>
-
-      <div class="card">
-        <div class="week-indicator">Herinandro faha-${currentWeek.weekNum}</div>
-        <h2 class="theme-title">${currentWeek.title}</h2>
-        <div class="verse-text">“ ${currentWeek.verse} ”</div>
-        <div class="verse-reference">${currentWeek.reference}</div>
-      </div>
-
-      <div class="navigation">
-        <button class="nav-btn" id="prev-btn" onclick="changeWeek(-1)">← Teo aloha</button>
-        <button class="nav-btn" id="next-btn" onclick="changeWeek(1)">Manaraka →</button>
+      <div class="error-box">
+        <h3>Misy olana kely (Error)</h3>
+        <p>${message}</p>
+        <small>${details}</small>
       </div>
     `;
-
-    document.getElementById('prev-btn').disabled = currentIndex === 0;
-    document.getElementById('next-btn').disabled = currentIndex === weeksData.length - 1;
   }
 
-  function changeWeek(direction) {
-    currentIndex += direction;
+  // 1. Generate active files list based on current date
+  function generateQuartersList() {
+    try {
+      const START_YEAR = 2026;
+      const START_QUARTER = 1;
+      
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); 
+      const currentQuarter = Math.floor(currentMonth / 3) + 1;
+      
+      const list = [];
+      const ROMAN = ["I", "II", "III", "IV"];
+      
+      for (let y = currentYear; y >= START_YEAR; y--) {
+        const maxQ = (y === currentYear) ? currentQuarter : 4;
+        const minQ = (y === START_YEAR) ? START_QUARTER : 1;
+        
+        for (let q = maxQ; q >= minQ; q--) {
+          list.push({
+            file: "verses-" + y + "-q" + q + ".txt",
+            label: "Telovolana " + ROMAN[q - 1] + ", " + y
+          });
+        }
+      }
+      return list;
+    } catch (e) {
+      showVisualError("Tsy tontosa ny fikajiana ny daty.", e.message);
+      return [];
+    }
+  }
+
+  // 2. Fetch the text file safely
+  async function loadVerses(fileName) {
+    try {
+      const container = document.getElementById('app-content');
+      container.innerHTML = '<div class="loading">Eo am-pamakiana ny teny faneva...</div>';
+      
+      const response = await fetch(fileName);
+      if (!response.ok) {
+        throw new Error("Tsy hita ilay rakitra '" + fileName + "'. Hamarino tsara raha efa tafakatra ao amin'ny GitHub izy io.");
+      }
+      
+      const text = await response.text();
+      parseAndRender(text);
+    } catch (err) {
+      showVisualError(err.message, "Raha mbola tsy nampidirina ao amin'ny GitHub io telovolana io dia tsindrio ny fizarana hafa eo ambony.");
+    }
+  }
+
+  // 3. Simple text line parser
+  function parseAndRender(rawText) {
+    try {
+      // Split clean lines safely
+      const lines = rawText.split(/\r?\n/).map(line => line.trim());
+      const blocks = [];
+      let currentBlock = [];
+
+      for (let line of lines) {
+        if (line.indexOf("---") === 0 || line.indexOf("===") === 0) {
+          if (currentBlock.length > 0) {
+            blocks.push(currentBlock);
+            currentBlock = [];
+          }
+        } else {
+          currentBlock.push(line);
+        }
+      }
+      if (currentBlock.length > 0) {
+        blocks.push(currentBlock);
+      }
+
+      if (blocks.length < 2) {
+        throw new Error("Tsy manaraka ny firafitra mety ilay rakitra txt (tokony hisy famantarana '---').");
+      }
+
+      // Title header Block 0
+      const header = blocks[0].filter(l => l !== "");
+      quarterTitle = header[0] || "TELOVOLANA";
+      quarterSubtitle = header.slice(1).join(" - ");
+
+      // Bible verses Blocks 1+
+      weeksData = [];
+      const verseBlocks = blocks.slice(1);
+      
+      let weekCounter = 1;
+      for (let block of verseBlocks) {
+        const cleanLines = block.filter(l => l !== "");
+        if (cleanLines.length === 0) continue;
+
+        if (cleanLines.length === 1) {
+          weeksData.push({
+            weekNum: weekCounter,
+            title: cleanLines[0],
+            verse: "Tsy misy andinin-tsoratra masina.",
+            reference: ""
+          });
+        } else if (cleanLines.length === 2) {
+          weeksData.push({
+            weekNum: weekCounter,
+            title: cleanLines[0],
+            verse: cleanLines[1],
+            reference: ""
+          });
+        } else {
+          weeksData.push({
+            weekNum: weekCounter,
+            title: cleanLines[0],
+            verse: cleanLines.slice(1, cleanLines.length - 1).join("\n"),
+            reference: cleanLines[cleanLines.length - 1]
+          });
+        }
+        weekCounter++;
+      }
+
+      if (weeksData.length === 0) {
+        throw new Error("Tsy nahitana andinin-tsoratra masina azo novakiana tao anatiny.");
+      }
+
+      currentIndex = 0;
+      renderPage();
+    } catch (e) {
+      showVisualError("Nisy fahadisoana teo am-pamakiana ny rakitra .txt", e.message);
+    }
+  }
+
+  // 4. Paint the screen HTML
+  function renderPage() {
+    try {
+      const container = document.getElementById('app-content');
+      const item = weeksData[currentIndex];
+
+      container.innerHTML = `
+        <div class="quarter-container">
+          <div class="quarter-title">${quarterTitle}</div>
+          <h1 class="quarter-subtitle">${quarterSubtitle}</h1>
+        </div>
+
+        <div class="card">
+          <div class="week-indicator">Herinandro faha-${item.weekNum}</div>
+          <h2 class="theme-title">${item.title}</h2>
+          <div class="verse-text">“ ${item.verse} ”</div>
+          <div class="verse-reference">${item.reference}</div>
+        </div>
+
+        <div class="navigation">
+          <button class="nav-btn" id="prev-btn" onclick="changeWeek(-1)">← Teo aloha</button>
+          <button class="nav-btn" id="next-btn" onclick="changeWeek(1)">Manaraka →</button>
+        </div>
+      `;
+
+      document.getElementById('prev-btn').disabled = (currentIndex === 0);
+      document.getElementById('next-btn').disabled = (currentIndex === weeksData.length - 1);
+    } catch (e) {
+      showVisualError("Tsy tontosa ny fampisehoana ny pejy.", e.message);
+    }
+  }
+
+  function changeWeek(dir) {
+    currentIndex += dir;
     renderPage();
   }
 
-  function handleQuarterChange(newFile) {
-    selectedFile = newFile;
-    loadVerses(selectedFile);
+  function handleQuarterChange(file) {
+    loadVerses(file);
   }
 
-  // Run the program
-  initSelector();
-  loadVerses(selectedFile);
+  // Main Startup Flow
+  try {
+    const list = generateQuartersList();
+    if (list.length > 0) {
+      const selectEl = document.getElementById('quarter-select');
+      let optionsHtml = "";
+      for (let item of list) {
+        optionsHtml += '<option value="' + item.file + '">' + item.label + '</option>';
+      }
+      selectEl.innerHTML = optionsHtml;
+      
+      // Load the top-most file
+      loadVerses(list[0].file);
+    }
+  } catch (e) {
+    showVisualError("Tsy nety nandeha ny fandaharana teo am-panombohana.", e.message);
+  }
 </script>
+
+</body>
+</html>
